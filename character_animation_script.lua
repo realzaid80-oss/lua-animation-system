@@ -121,6 +121,12 @@ local animNames = {
 	automaticSave = {
 		{ id = "rbxassetid://99808373661425", weight = 10 }
 	},
+	-- ==================================================================
+	-- ✊ انميشن ضرب اليد (Punch Animation with Blending)
+	-- ==================================================================
+	punchBlend = {
+		{ id = "rbxassetid://126948640508352", weight = 10 }
+	},
 }
 
 -- Existance in this list signifies that it is an emote, the value indicates if it is a looping emote
@@ -612,17 +618,17 @@ UserInputService.InputBegan:Connect(function(input, gameProcessedEvent)
 end)
 
 -- ==================================================================
--- 3️⃣ ضربة اليد (Punch) عبر زر F مع cooldown 3 ثواني
+-- 3️⃣ ضربة اليد (Punch) عبر زر F مع Animation Blending
 -- ⚠️ لا تعمل في الكراوش
 -- ==================================================================
 
-local punchAnim = Instance.new("Animation")
-punchAnim.Name = "punch"
-punchAnim.AnimationId = "rbxassetid://72277313295368"
+local punchBlendAnim = Instance.new("Animation")
+punchBlendAnim.Name = "punchBlend"
+punchBlendAnim.AnimationId = "rbxassetid://126948640508352"
 
-local punchTrack = Humanoid:LoadAnimation(punchAnim)
-punchTrack.Priority = Enum.AnimationPriority.Action
-punchTrack.Looped = false
+local punchBlendTrack = Humanoid:LoadAnimation(punchBlendAnim)
+punchBlendTrack.Priority = Enum.AnimationPriority.Action
+punchBlendTrack.Looped = false
 
 local punchSound = Instance.new("Sound")
 punchSound.Name = "PunchSound"
@@ -631,13 +637,15 @@ punchSound.Volume = 1
 punchSound.Parent = hrp
 
 local isPunching = false
-local PUNCH_COOLDOWN = 3
+local PUNCH_COOLDOWN = 0.8  -- 0.8 ثانية بين الضربات (يسمح بضربات متتالية)
+local PUNCH_BLEND_FADE_TIME = 0.15
 
-punchTrack.Stopped:Connect(function()
+punchBlendTrack.Stopped:Connect(function()
 	isPunching = false
 end)
 
 local function playPunch()
+	-- ❌ منع الضرب في الكراوش
 	if isCrouching then
 		return
 	end
@@ -646,9 +654,17 @@ local function playPunch()
 		return
 	end
 	isPunching = true
-	punchTrack:Play()
+	
+	-- تشغيل الانميشن مع Animation Blending
+	punchBlendTrack:Play(PUNCH_BLEND_FADE_TIME)
+	
+	-- ضبط الأولوية لضمان تشغيل الانميشن فوق الحركات الأخرى
+	punchBlendTrack.Priority = Enum.AnimationPriority.Action
+	
+	-- تشغيل صوت الضرب
 	punchSound:Play()
 
+	-- انتظر وقت الضربة قبل القدرة على ضرب مرة أخرى
 	task.wait(PUNCH_COOLDOWN)
 	isPunching = false
 end
